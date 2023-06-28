@@ -55,3 +55,13 @@ print( string.format("x=%d, y=%d", 1, 2) )
 print( string.format("c=%x", 200) )  -- 16进制
 print( string.format("f=%f", 3.1415) )  -- float 浮点数
 print( string.format("f=%.2f", 3.1415) )  -- float 浮点数, 限制小数点后的位数
+
+-- 请编写一个函数，使之实现在某个字符串的指定位置插入另一个字符串
+function strInsert(str, i, block)
+    prefix = string.sub(str, 0, i-1)
+    suffix = string.sub(str, i)
+    return prefix .. block .. suffix
+end
+
+print( strInsert("hello world", 7, "small") )
+print( strInsert("hello world", 1, "small") )
