@@ -135,3 +135,87 @@ dates = "today is 2023-07-10"
 y, m, d = string.match(dates, "(%d+)-(%d+)-(%d+)")
 print( y, m, d )
 
+--[[
+在模式中，形如'% n '的分类（其中 n 是一个数字），表示匹配第 n 个捕获的副本。
+举一个典型的例子，假设想在一个字符串中寻找一个由单引号或双引号括起来的子串。
+那么可能会尝试使用模式'["'].-["']'，它表示一个引号后面跟任意内容及另外一个引号；
+但是，这种模式在处理像"it's all right"这样的字符串时会有问题。
+要解决这个问题，可以捕获第一个引号然后用它来指明第二个引号：
+]]
+s = [[ he said: "it's all right!" ]]
+print(s)
+-- 在第一个捕获的字符集[]中， 无法确定是 单引号 还是双引号， 所以在后面使用捕获 %1 通过匹配后面的双引号来指明第一个捕获使用双引号进行匹配
+q, m, t = string.match(s, "([\"'])(.-)%1")
+print(q, m, t)
+
+-- 使用捕获的 demo
+p = "%[(=*)%[(.-)%]%1%]"
+s = "a = [=[[[ something ]] ]==] ]=]; print(a)"
+print(string.match(s, p))
+
+--[[
+被捕获对象的第3个用途是在函数gsub的替代字符串中。
+像模式一样，替代字符串同样可以包括像"% n "一样的字符分类，当发生替换时会被替换为相应的捕获。
+特别地，"%0"意味着整个匹配，并且替换字符串中的百分号必须被转义为"%%"。
+]]
+-- 下面这个示例会重复字符串中的每个字母，并且在每个被重复的字母之间插入一个减号：
+print((string.gsub("hello lua", "%a", "%0-%0")))
+
+-- 剔除字符串两端空格：
+--[[
+请注意模式中修饰符的合理运用。两个定位标记（^和$）保证了我们可以获取到整个字符串。
+由于中间的'.-'只会匹配尽可能少的内容，所以两个'%s*'便可匹配到首尾两端的空格。
+]]
+function trim (s)
+    s = string.gsub(s, "^%s*(.-)%s*$", "%1")
+    return s
+end
+
+print( string.len(trim(" hi! ")) )
+
+--[[
+正如我们此前已经看到的，函数string.gsub的第3个参数不仅可以是字符串，还可以是一个函数或表。
+当第3个参数是一个函数时，函数string.gsub会在每次找到匹配时调用该函数，参数是捕获到的内容而返回值则被作为替换字符串。
+当第3个参数是一个表时，函数string.gsub会把第一个捕获到的内容作为键，然后将表中对应该键的值作为替换字符串。
+如果函数的返回值为nil或表中不包含这个键或表中键的对应值为nil，那么函数gsub不改变这个匹配。
+]]
+
+function expand (s)
+    -- _G是预先定义的包括所有全局变量的表
+    -- 对于每个与'$（%w+）'匹配的地方（$符号后紧跟一个名字），函数 gsub 都会在全局表_G中査找捕获到的名字，并用找到的结果替换字符串中相匹配的部分；
+    -- 如果表中没有对应的键，则不进行替换
+    return string.gsub(s, "$(%w+)", _G)
+end
+
+function expand1 (s)
+    return string.gsub(s, "$(%w+)", function(n)
+        return tostring(_G[n])
+    end)
+end
+
+name = "lua"
+status = "hi"
+print( expand("$name is $status !!") )
+
+
+--[[
+在Lua语言中，像'()'这样的空白捕获（empty capture）具有特殊含义。
+该模式并不代表捕获空内容（这样的话毫无意义），而是捕获模式在目标字符串中的位置（该位置是数值）：
+（请注意，由于第2个空捕获的位置是在匹配之后，所以这个示例的结果与调用函数string.find得到的结果并不一样。）
+]]
+
+print(string.match("hello", "()ll()"))
+
+-- 制表符\t 展开
+function expandTabs(s, tab)
+    tab = tab or 8 -- 制表符的大小 默认值 8
+    local corr = 0
+    s = string.gsub(s, "()\t", function(p)
+        local sp = tab - (p - 1 + corr) % tab
+        corr = corr - 1 + sp
+        return string.rep(" ", sp)
+    end)
+    return s
+end
+
+print( expandTabs("a\tb") )
